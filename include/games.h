@@ -1,0 +1,1 @@
+void start_benchmark(int pipe_main_to_child1[2], int pipe_child_to_main1[2], int pipe_main_to_child2[2], int pipe_child_to_main2[2], pid_t pid1, pid_t pid2);
