@@ -8,6 +8,7 @@
 
 #include "communication.h"
 #include "games.h"
+#include "parameters.h"
 
 int main()
 {
@@ -38,7 +39,7 @@ int main()
 
     if (pid1 == 0)
     {
-        setup_child_process(pipe_main_to_child1, pipe_child1_to_main, "./engines/alphabeta_2.0s");
+        setup_child_process(pipe_main_to_child1, pipe_child1_to_main, ENGINES_DIR ENGINE_1_NAME);
     }
     else
     {
@@ -51,7 +52,7 @@ int main()
 
         if (pid2 == 0)
         {
-            setup_child_process(pipe_main_to_child2, pipe_child2_to_main, "./engines/alphabeta_2.0s");
+            setup_child_process(pipe_main_to_child2, pipe_child2_to_main, ENGINES_DIR ENGINE_2_NAME);
         }
         else
         {

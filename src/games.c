@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <time.h>
 
+#include "parameters.h"
 #include "games.h"
 #include "communication.h"
 #include "types.h"
@@ -56,7 +57,7 @@ Move get_next_move(int pipe_main_to_child[2], int pipe_child_to_main[2], char mo
     communicate_with_child(pipe_main_to_child, pipe_child_to_main, message2, answer, 1);
     clock_gettime(CLOCK_MONOTONIC, &end);
     double elapsed_time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-    if (elapsed_time > 0.11)
+    if (elapsed_time > fmax(wtime, btime) / 1000.0 + 1.0)
     {
         fprintf(stdout, "Answer took too much time: Elapsed time is %f seconds.\n", elapsed_time);
         exit(EXIT_FAILURE);
@@ -142,7 +143,7 @@ int check_end(PositionList *pos_l)
 {
     if (pos_l == NULL)
     {
-        fprintf(stdout, "No moves given (this shouldn't be possinle)\n");
+        fprintf(stdout, "No moves given (this shouldn't be possible)\n");
         return 0;
     }
     BoardState *board_s = pos_l->board_s;
@@ -312,9 +313,9 @@ void start_benchmark(int pipe_main_to_child1[2], int pipe_child1_to_main[2], int
         exit(EXIT_FAILURE);
     }
 
-    int engine1_time = 100;
-    int engine2_time = 100;
-    int number_of_rounds = 100;
+    int engine1_time = ENGINE_1_TIME;
+    int engine2_time = ENGINE_2_TIME;
+    int number_of_rounds = NUMBER_OF_ROUNDS;
     int engine1_w_victories = 0;
     int engine1_b_victories = 0;
     int engine2_w_victories = 0;
@@ -333,7 +334,7 @@ void start_benchmark(int pipe_main_to_child1[2], int pipe_child1_to_main[2], int
         int game_result;
         char starting_pos[128];
         fprintf(stdout, "Round %d\n", i);
-        fprintf(stdout, "engine1 is white, engine2 is black\n");
+        fprintf(stdout, "engine1 (" ENGINE_1_NAME ") is white, engine2 (" ENGINE_2_NAME ") is black\n");
         sprintf(starting_pos, "fen \"%s\"", starting_pos_fen[i]);
         fprintf(OUTPUT_FILE, "Sending 'ucinewgame' command to child 1\n");
         communicate_with_child(pipe_main_to_child1, pipe_child1_to_main, "ucinewgame\n", answer, 0);
@@ -372,13 +373,13 @@ void start_benchmark(int pipe_main_to_child1[2], int pipe_child1_to_main[2], int
     int draws = engine1_w_draws + engine2_w_draws;
     int engine1_victories = engine1_w_victories + engine1_b_victories;
     int engine2_victories = engine2_w_victories + engine2_b_victories;
-    fprintf(stdout, "Engine 1: %d victories (w: %d, b: %d), %d defeats (w: %d, b: %d), %d draws (w: %d, b: %d)\n", engine1_victories, engine1_w_victories, engine1_b_victories, engine2_victories, engine2_b_victories, engine2_w_victories, draws, engine1_w_draws, engine2_w_draws);
-    fprintf(stdout, "Engine 2: %d victories (w: %d, b: %d), %d defeats (w: %d, b: %d), %d draws (w: %d, b: %d)\n", engine2_victories, engine2_w_victories, engine2_b_victories, engine1_victories, engine1_b_victories, engine1_w_victories, draws, engine2_w_draws, engine1_w_draws);
+    fprintf(stdout, "Engine 1 (%s): %d victories (w: %d, b: %d), %d defeats (w: %d, b: %d), %d draws (w: %d, b: %d)\n", ENGINE_1_NAME, engine1_victories, engine1_w_victories, engine1_b_victories, engine2_victories, engine2_b_victories, engine2_w_victories, draws, engine1_w_draws, engine2_w_draws);
+    fprintf(stdout, "Engine 2 (%s): %d victories (w: %d, b: %d), %d defeats (w: %d, b: %d), %d draws (w: %d, b: %d)\n", ENGINE_2_NAME, engine2_victories, engine2_w_victories, engine2_b_victories, engine1_victories, engine1_b_victories, engine1_w_victories, draws, engine2_w_draws, engine1_w_draws);
     double win_rate1 = (engine1_victories + draws * 0.5) / (engine1_victories + engine2_victories + draws);
     printf("Win rate of engine 1: %f\n", win_rate1);
     double elo_difference = elo_diff(win_rate1);
     double margin_of_error = error_margin(engine1_victories, engine2_victories, draws);
-    fprintf(stdout, "Elo difference: %f (margin of error: %f)\n", elo_difference, margin_of_error);
+    fprintf(stdout, "Elo difference: %f (margin of error at 0.95: %f)\n", elo_difference, margin_of_error);
 
     fprintf(OUTPUT_FILE, "Sending 'quit' command to child 1\n");
     communicate_with_child(pipe_main_to_child1, pipe_child1_to_main, "quit\n", answer, 0);
